@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Admin Dashboard</h2>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <button id="logoutBtn">Logout</button>
+                <button id="generateBtn">Generate API Key</button>
+            </div>
+        </div>
+
+        <h3>User List</h3>
+        <table id="userTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email</th>
+                    <th>Start Date</th>
+                    <th>API Key IDs</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>API Key List</h3>
+        <table id="apikeyTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>API Key</th>
+                    <th>Status</th>
+                    <th>User ID</th>
+                    <th>User Email</th>
+                    <th>Expires At</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        document.getElementById('logoutBtn').onclick = function() {
+            window.location.href = 'login.html';
+        };
+
+        document.getElementById('generateBtn').onclick = function() {
+            window.location.href = 'generate_apikey.html';
+        };
+
+        // LOAD DASHBOARD DATA
+        async function loadDashboard() {
+            const res = await fetch('/api/dashboard');
+            if (!res.ok) return;
+
+            const data = await res.json();
+
+            // USER TABLE
+            const userTbody = document.querySelector('#userTable tbody');
+            userTbody.innerHTML = '';
+
+            data.users.forEach(user => {
+                const apiKeyIds = data.apikeys
+                    .filter(a => a.user_id === user.id)
+                    .map(a => a.id)
+                    .join(', ');
+
+                userTbody.innerHTML += `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.first_name}</td>
+                        <td>${user.last_name}</td>
+                        <td>${user.email}</td>
+                        <td>${user.start_date}</td>
+                        <td>${apiKeyIds}</td>
+                        <td>
+                            <button onclick="deleteUser(${user.id})" style="background:#D9534F;color:white;padding:5px;border:none;border-radius:4px;cursor:pointer;">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // API KEY TABLE
+            const apikeyTbody = document.querySelector('#apikeyTable tbody');
+            apikeyTbody.innerHTML = '';
+
+            data.apikeys.forEach(api => {
+                apikeyTbody.innerHTML += `
+                    <tr>
+                        <td>${api.id}</td>
+                        <td>${api.api_key}</td>
+                        <td>${api.status}</td>
+                        <td>${api.user_id || 'N/A'}</td>
+                        <td>${api.user_email || 'N/A'}</td>
+                        <td>${api.expires_at}</td>
+                        <td>
+                            <button onclick="deleteApiKey(${api.id})" style="background:#D9534F;color:white;padding:5px;border:none;border-radius:4px;cursor:pointer;">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // DELETE USER
+        async function deleteUser(id) {
+            if (!confirm("Yakin ingin menghapus user ini?")) return;
+
+                const res = await fetch(`/api/user/${id}`, { method: 'DELETE' });
+
+            if (res.ok) {
+                alert("User berhasil dihapus!");
+                loadDashboard();
+            } else {
+                alert("Gagal menghapus user!");
+            }
+        }
+
+        // DELETE API KEY
+        async function deleteApiKey(id) {
+            if (!confirm("Yakin ingin menghapus API Key ini?")) return;
+
+            const res = await fetch(`/api/apikey/${id}`, { method: 'DELETE' });
+
+            if (res.ok) {
+                alert("API Key berhasil dihapus!");
+                loadDashboard();
+            } else {
+                alert("Gagal menghapus API Key!");
+            }
+        }
+
+        window.onload = loadDashboard;
+    </script>
+
+</body>
+</html>
